@@ -29,7 +29,6 @@ class NotificationListener : NotificationListenerService() {
         try {
             val notification = sbn.notification
             val extras = notification.extras
-
             val title = extras.getString(Notification.EXTRA_TITLE) ?: ""
             val text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString() ?: ""
             val packageName = sbn.packageName
@@ -52,7 +51,9 @@ class NotificationListener : NotificationListenerService() {
             }
 
             // Save to local storage
-            saveNotification(notificationData)
+            if (packageName.equals("com.whatsapp")) {
+                saveNotification(notificationData)
+            }
 
             Log.d(TAG, "Notification saved: $title from $packageName")
             if (expandedText.isNotEmpty() && expandedText != text) {

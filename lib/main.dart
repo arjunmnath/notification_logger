@@ -43,6 +43,7 @@ class _NotificationLoggerHomeState extends State<NotificationLoggerHome> {
   @override
   void initState() {
     super.initState();
+    restartService();
     _checkServiceStatus();
     _loadNotifications(); // Initial load
 
@@ -127,6 +128,24 @@ class _NotificationLoggerHomeState extends State<NotificationLoggerHome> {
     } catch (e) {
       print("Error getting local file: $e");
       return null;
+    }
+  }
+
+  Future<void> restartService() async {
+    try {
+      final result = await platform.invokeMethod("restartService");
+      print(result); // Should print "Service restarted"
+    } catch (e) {
+      print("Error restarting service: $e");
+    }
+  }
+
+  Future<void> disableBatteryOptimizations() async {
+    try {
+      final result = await platform.invokeMethod("disableBatteryOptimizations");
+      print(result); // Should print "Service restarted"
+    } catch (e) {
+      print("Error restarting service: $e");
     }
   }
 
