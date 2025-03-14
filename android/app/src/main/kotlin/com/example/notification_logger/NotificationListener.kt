@@ -5,6 +5,7 @@ package com.example.notification_logger
 import android.app.Notification
 import android.content.Context
 import android.content.Intent
+import android.os.Bundle
 import android.os.IBinder
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
@@ -36,20 +37,59 @@ class NotificationListener : NotificationListenerService() {
             val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
                 .format(Date(sbn.postTime))
 
+            // Try to extract expanded text content
+            val expandedText = extractExpandedText(extras)
+
             val notificationData = JSONObject().apply {
                 put("title", title)
                 put("text", text)
                 put("packageName", packageName)
                 put("timestamp", timestamp)
+                put("expandedText", expandedText)
+                put("hasExpandedContent", expandedText.isNotEmpty() && expandedText != text)
+                put("notificationId", sbn.id)
+                put("notificationKey", sbn.key)
             }
 
-            // Save to local storage directly since we can't use method channel from service
+            // Save to local storage
             saveNotification(notificationData)
 
             Log.d(TAG, "Notification saved: $title from $packageName")
+            if (expandedText.isNotEmpty() && expandedText != text) {
+                Log.d(TAG, "Expanded content captured: $expandedText")
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Error processing notification", e)
         }
+    }
+
+    private fun extractExpandedText(extras: Bundle): String {
+        // Try to get expanded text from different possible sources
+        val expandedText = StringBuilder()
+
+        // Try to extract BigTextStyle content
+        val bigText = extras.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString()
+        if (!bigText.isNullOrEmpty()) {
+            expandedText.append(bigText)
+        }
+
+        // Try to extract InboxStyle content (list of messages)
+        val textLines = extras.getCharSequenceArray(Notification.EXTRA_TEXT_LINES)
+        if (textLines != null && textLines.isNotEmpty()) {
+            for (line in textLines) {
+                if (expandedText.isNotEmpty()) expandedText.append("\n")
+                expandedText.append(line)
+            }
+        }
+
+        // Try to extract summary text
+        val summaryText = extras.getCharSequence(Notification.EXTRA_SUMMARY_TEXT)?.toString()
+        if (!summaryText.isNullOrEmpty() && !expandedText.contains(summaryText)) {
+            if (expandedText.isNotEmpty()) expandedText.append("\n")
+            expandedText.append(summaryText)
+        }
+
+        return expandedText.toString()
     }
 
     private fun saveNotification(notification: JSONObject) {
